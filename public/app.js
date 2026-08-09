@@ -4,6 +4,7 @@ const log_list_el = document.getElementById("log-list");
 const current_log_title = document.getElementById("current-log-title");
 const theme_toggle_btn = document.getElementById("theme-toggle");
 const log_filter_el = document.getElementById("log-filter");
+const pause_toggle_btn = document.getElementById("pause-toggle");
 
 const ICON_SUN = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-sun" viewBox="0 0 16 16">
   <path d="M8 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6m0 1a4 4 0 1 0 0-8 4 4 0 0 0 0 8M8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0m0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13m8-5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5M3 8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2A.5.5 0 0 1 3 8m10.657-5.657a.5.5 0 0 1 0 .707l-1.414 1.415a.5.5 0 1 1-.707-.708l1.414-1.414a.5.5 0 0 1 .707 0m-9.193 9.193a.5.5 0 0 1 0 .707L3.05 13.657a.5.5 0 0 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0m9.193 2.121a.5.5 0 0 1-.707 0l-1.414-1.414a.5.5 0 0 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .707M4.464 4.465a.5.5 0 0 1-.707 0L2.343 3.05a.5.5 0 1 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .708"/>
@@ -13,6 +14,11 @@ const ICON_MOON = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16
   <path d="M10.794 3.148a.217.217 0 0 1 .412 0l.387 1.162c.173.518.579.924 1.097 1.097l1.162.387a.217.217 0 0 1 0 .412l-1.162.387a1.73 1.73 0 0 0-1.097 1.097l-.387 1.162a.217.217 0 0 1-.412 0l-.387-1.162A1.73 1.73 0 0 0 9.31 6.593l-1.162-.387a.217.217 0 0 1 0-.412l1.162-.387a1.73 1.73 0 0 0 1.097-1.097zM13.863.099a.145.145 0 0 1 .274 0l.258.774c.115.346.386.617.732.732l.774.258a.145.145 0 0 1 0 .274l-.774.258a1.16 1.16 0 0 0-.732.732l-.258.774a.145.145 0 0 1-.274 0l-.258-.774a1.16 1.16 0 0 0-.732-.732l-.774-.258a.145.145 0 0 1 0-.274l.774-.258c.346-.115.617-.386.732-.732z"/>
 </svg>`;
 
+const ICON_PAUSE = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z"/></svg>`;
+const ICON_PLAY = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M11.596 8.697l-6.363 5.692c-.54.592-.54.126-.54-.126V4.308c0-.654.54-.654.54-.126L11.596 8.697z"/></svg>`;
+
+let is_paused = false;
+let event_queue = [];
 let active_event_source = null;
 
 /**
@@ -37,6 +43,32 @@ function init_theme() {
         theme_toggle_btn.innerHTML =
             new_theme === "dark" ? ICON_SUN : ICON_MOON;
         localStorage.setItem("theme", new_theme);
+    };
+
+    // Initialize pause toggle button
+    pause_toggle_btn.innerHTML = ICON_PAUSE;
+    pause_toggle_btn.onclick = () => {
+        is_paused = !is_paused;
+        pause_toggle_btn.innerHTML = is_paused ? ICON_PLAY : ICON_PAUSE;
+
+        if (!is_paused) {
+            // Flush queue: Process all cached events in order
+            while (event_queue.length > 0) {
+                const data = event_queue.shift();
+                const block = create_event_block(data);
+
+                // Still respect current filter when flushing queue
+                const filter_text = log_filter_el.value.toLowerCase();
+                if (
+                    filter_text &&
+                    !block.textContent.toLowerCase().includes(filter_text)
+                ) {
+                    block.style.display = "none";
+                }
+
+                timeline.prepend(block);
+            }
+        }
     };
 }
 
@@ -334,11 +366,20 @@ function connect_to_log(filename) {
     event_source.onmessage = (event) => {
         try {
             const data = JSON.parse(event.data);
+
+            if (is_paused) {
+                event_queue.push(data);
+                return;
+            }
+
             const block = create_event_block(data);
 
             // Apply active filter to new blocks before appending
             const filter_text = log_filter_el.value.toLowerCase();
-            if (filter_text && !block.textContent.toLowerCase().includes(filter_text)) {
+            if (
+                filter_text &&
+                !block.textContent.toLowerCase().includes(filter_text)
+            ) {
                 block.style.display = "none";
             }
 
@@ -408,7 +449,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const blocks = document.querySelectorAll(".event-block");
 
         blocks.forEach((block) => {
-            const is_match = block.textContent.toLowerCase().includes(search_term);
+            const is_match = block.textContent
+                .toLowerCase()
+                .includes(search_term);
             block.style.display = is_match ? "block" : "none";
         });
     };

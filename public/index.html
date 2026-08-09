@@ -20,11 +20,20 @@
             <header class="app-header">
                 <h1 id="current-log-title">Select a log file</h1>
                 <div style="display: flex; align-items: center; gap: 1rem">
-                    <input type="text" id="log-filter" placeholder="Filter logs...">
+                    <input
+                        type="text"
+                        id="log-filter"
+                        placeholder="Filter logs..."
+                    />
                     <button
                         id="theme-toggle"
                         class="theme-toggle"
                         aria-label="Toggle Theme"
+                    ></button>
+                    <button
+                        id="pause-toggle"
+                        class="theme-toggle"
+                        aria-label="Pause Stream"
                     ></button>
                     <div id="connection-status" class="status disconnected">
                         Disconnected
