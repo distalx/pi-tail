@@ -15,12 +15,18 @@
     "bugs": {
         "url": "https://github.com/distalx/pi-tail/issues"
     },
-    "homepage": "https://github.com/distalx/pi-tail",
+    "homepage": "https://github.com/distalx/pi-tail#README.md",
     "files": [
         "bin/",
         "public/",
         "assets/",
         "server.js",
         "README.md"
+    ],
+    "keywords": [
+        "cli",
+        "visualizer",
+        "telemetry",
+        "pi-agent"
     ]
 }
