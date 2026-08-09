@@ -19,8 +19,13 @@
         <main class="main-content">
             <header class="app-header">
                 <h1 id="current-log-title">Select a log file</h1>
-                <div id="connection-status" class="status disconnected">
-                    Disconnected
+                <div style="display: flex; align-items: center; gap: 1rem">
+                    <button id="theme-toggle" class="theme-toggle">
+                        Toggle Theme
+                    </button>
+                    <div id="connection-status" class="status disconnected">
+                        Disconnected
+                    </div>
                 </div>
             </header>
             <div id="timeline"></div>

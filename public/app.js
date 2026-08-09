@@ -2,8 +2,28 @@ const timeline = document.getElementById("timeline");
 const status_el = document.getElementById("connection-status");
 const log_list_el = document.getElementById("log-list");
 const current_log_title = document.getElementById("current-log-title");
+const theme_toggle_btn = document.getElementById("theme-toggle");
 
 let active_event_source = null;
+
+/**
+ * Initializes the application theme based on localStorage.
+ */
+function init_theme() {
+    const saved_theme = localStorage.getItem("theme");
+    if (saved_theme === "dark") {
+        document.documentElement.setAttribute("data-theme", "dark");
+    }
+
+    theme_toggle_btn.onclick = () => {
+        const current_theme =
+            document.documentElement.getAttribute("data-theme");
+        const new_theme = current_theme === "dark" ? "light" : "dark";
+
+        document.documentElement.setAttribute("data-theme", new_theme);
+        localStorage.setItem("theme", new_theme);
+    };
+}
 
 /**
  * Escapes HTML characters to prevent XSS and malformed DOM layout.
@@ -39,6 +59,7 @@ function parse_markdown(raw_text) {
     // Line breaks are natively handled by 'white-space: pre-wrap' in CSS.
     return html;
 }
+
 function render_data(data) {
     const container = document.createElement("div");
     container.className = "event-content";
@@ -216,7 +237,7 @@ function create_event_block(data) {
     const parsed = parse_log_entry(data);
 
     const block = document.createElement("div");
-    block.className = "event-block";
+    block.className = "event-block animate-in";
 
     // Row view (Compact)
     const row = document.createElement("div");
@@ -355,4 +376,7 @@ async function load_log_list() {
     }
 }
 
-document.addEventListener("DOMContentLoaded", load_log_list);
+document.addEventListener("DOMContentLoaded", () => {
+    init_theme();
+    load_log_list();
+});
