@@ -1,0 +1,247 @@
+body {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #0d1117;
+    color: #c9d1d9;
+    margin: 0;
+}
+
+.app-container {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.sidebar {
+    width: 300px;
+    background-color: #161b22;
+    border-right: 1px solid #30363d;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+}
+
+.sidebar-header {
+    padding: 1.5rem 1rem;
+    border-bottom: 1px solid #30363d;
+}
+
+.sidebar-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: #f0f6fc;
+}
+
+.log-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem 0;
+}
+
+.log-item {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: #8b949e;
+    border-left: 3px solid transparent;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.log-item:hover {
+    background-color: #21262d;
+    color: #c9d1d9;
+}
+
+.log-item.active {
+    background-color: #1f6feb20;
+    color: #58a6ff;
+    border-left-color: #1f6feb;
+}
+
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.app-header {
+    background-color: #161b22;
+    padding: 1rem 2rem;
+    border-bottom: 1px solid #30363d;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.app-header h1 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: #f0f6fc;
+}
+
+#connection-status {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.status.connected {
+    background-color: #238636;
+    color: #ffffff;
+}
+.status.disconnected {
+    background-color: #da3633;
+    color: #ffffff;
+}
+
+#timeline {
+    padding: 1rem 2rem;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.event-block {
+    background-color: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    margin-bottom: 4px;
+    overflow: hidden;
+    transition: background-color 0.2s ease;
+}
+
+.event-block:hover {
+    background-color: #1c2128;
+}
+
+.event-row {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 0.5rem 0;
+    user-select: none;
+}
+
+.col-1 {
+    width: 50px;
+    text-align: center;
+    font-family: monospace;
+    font-size: 0.75rem;
+    color: #484f58;
+    flex-shrink: 0;
+}
+
+.col-2 {
+    width: 120px;
+    text-align: left;
+    padding-left: 1rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    color: #8b949e;
+    flex-shrink: 0;
+}
+
+.col-3 {
+    flex: 1;
+    padding: 0 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: "Cascadia Code", monospace;
+    font-size: 0.85rem;
+    color: #c9d1d9;
+}
+
+.event-details {
+    display: none;
+    padding: 1rem;
+    border-top: 1px solid #30363d;
+    background-color: #0d1117;
+}
+
+.event-full-text {
+    font-family: "Cascadia Code", monospace;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: #c9d1d9;
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin-bottom: 1rem;
+}
+
+/* Event Type Colors for Col 2 */
+.type-session {
+    color: #a371f7 !important;
+} /* Magenta/Purple */
+.type-system {
+    color: #d29922 !important;
+} /* Yellow/Warning */
+.type-turn {
+    color: #3b3c36 !important;
+} /* Blue */
+.type-message {
+    color: #3fb950 !important;
+} /* Green */
+.type-think {
+    color: #967117 !important;
+} /* Purple */
+.type-out {
+    color: #8b949e !important;
+} /* Gray for standard output */
+.type-user {
+    color: #3e77ff !important;
+} /* Stratos Blue */
+
+.type-input {
+    color: #ff7b72 !important;
+} /* Coral/Pink */
+
+/* Tool Execution Colors */
+.type-bash {
+    color: #e34c26 !important;
+} /* Orange */
+.type-read {
+    color: #d29922 !important;
+} /* Yellow */
+.type-write {
+    color: #d29922 !important;
+} /* Yellow */
+.type-edit {
+    color: #737000 !important;
+} /* Bronze Yellow */
+.type-toolCall {
+    color: #d29922 !important;
+} /* Fallback tool color */
+
+details {
+    margin-top: 0.5rem;
+    background-color: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 4px;
+}
+
+summary {
+    padding: 0.4rem;
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: #8b949e;
+    user-select: none;
+}
+
+summary:hover {
+    background-color: #21262d;
+    color: #c9d1d9;
+}
+
+.details-body {
+    padding: 0.5rem;
+    border-top: 1px solid #30363d;
+    font-size: 0.85rem;
+    overflow-x: auto;
+}

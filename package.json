@@ -1,0 +1,26 @@
+{
+    "name": "pi-tail",
+    "version": "0.1.0",
+    "description": "A real-time terminal visualizer for pi agent telemetry logs.",
+    "main": "server.js",
+    "type": "module",
+    "bin": {
+        "pi-tail": "./bin/pi-tail.js"
+    },
+    "author": "dx",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/distalx/pi-tail.git"
+    },
+    "bugs": {
+        "url": "https://github.com/distalx/pi-tail/issues"
+    },
+    "homepage": "https://github.com/distalx/pi-tail",
+    "files": [
+        "bin/",
+        "public/",
+        "assets/",
+        "server.js",
+        "README.md"
+    ]
+}
