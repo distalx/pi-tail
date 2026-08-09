@@ -30,46 +30,35 @@ Create a global terminal utility (`pi-tail`) that watches JSON Lines (`.log`) fi
 - **Payload Management**: Utilize native HTML `<details>` and `<summary>` tags to collapse large data objects (like `rendered_system_prompt`), keeping the timeline scannable. Extract top-level keys to display in the `<summary>` string to reduce required clicks.
 - **Node Culling**: Implement a mechanism to remove the oldest child nodes if the timeline exceeds 500 elements to prevent DOM bloat and browser memory exhaustion.
 
-## Implementation Phases (Historical Reference)
+## Implementation Phases (Historical & Upcoming)
 
-### Phase 1: Server Foundation & SSE
+### Phase 1 - 7: Foundation & UI Layout
 
-- Initialize the `node:http` server and serve static files.
-- Build a mock SSE endpoint and verify it correctly pushes dummy lines to a basic HTML page.
+- Server initialization, directory scanning, SSE delta streaming, and semantic three-column flexbox layout creation. _(Completed)_
 
-### Phase 2: Live File Tracking
+### Phase 8: Layer 2 Data Parsing Refactor (Current)
 
-- Implement directory-scanning logic to locate active `.log` files dynamically via `process.cwd()`.
-- Connect the `fs.watch` event to the SSE broadcaster, transmitting new byte deltas.
+- Deprecate the rigid `large_keys` array in `render_data`.
+- Refactor Layer 2 to ingest and render the complete `data` object as a unified, configurable JSON tree to ensure consistency across varying event payloads (`before_agent_start`, `tool_execution_start`, etc.).
 
-### Phase 3: Interface Formatting
+### Phase 9: Layer 1 Markdown Integration
 
-- Build the timeline interface in `public/index.html` and `public/app.js`.
-- Style the event blocks to differentiate between event types and implement collapsible `<details>` views without redundant data.
+- Implement a lightweight, zero-dependency markdown parser for the `full_text_el` in Layer 1 to format AI outputs and system prompts cleanly.
 
-### Phase 4: Historical State & Client-Directed Streams
+### Phase 10: Atom One Theming & Animations
 
-- Refactor the backend `/stream` endpoint to accept a `?file=` parameter.
-- Implement historical loading from byte zero on initial connection, followed by connection-specific file watchers.
+- Extract hardcoded CSS hex values into `:root` and `[data-theme="dark"]` variables.
+- Map the Atom One Light/Dark palette and implement a `localStorage` backed theme toggle.
+- Add CSS `@keyframes` for smooth insertion of new `.event-block` elements.
 
-### Phase 5: Discovery API
+### Phase 11: Extended Quality of Life Features
 
-- Implement the `/api/logs` endpoint to expose the directory contents as a sorted JSON array.
+- Implement auto-scroll pausing, client-side filtering, and payload copy-to-clipboard functionality.
 
-### Phase 6: Sidebar Integration
-
-- Build the frontend sidebar container.
-- Implement the data-fetching logic and wire up the connection-reset mechanism for switching between files interactively.
-
-### Phase 7: Semantic UI Layout & Scannability
-
-- Refactor the DOM construction mechanism to display a three-column flexbox row consisting of a Sequence integer (`seq`), an Action identifier, and a single-line text Summary.
-- Implement a data-parsing router function that evaluates the incoming `event` type to extract the highest-value identifiers (e.g., `data.tool_name` for tool executions, truncated `thinking` strings for assistant messages) for the UI columns.
-- Implement an expansion mechanism by attaching an `onclick` event listener to the flexbox row, allowing users to dynamically toggle the CSS visibility state of the full, raw JSON tree beneath it.
-
-## Coding Conventions & Guidelines
+## Coding Conventions & DX Guidelines
 
 - **Strict Naming**: Use `snake_case` exclusively for all variable and function declarations.
 - **Clarity Over Metaphor**: When discussing AI behavior or documenting the underlying code, prioritize describing the exact execution mechanism rather than using analogies. If a metaphor is absolutely necessary for communication within the code comments, explicitly acknowledge its limitations.
-- **Modularity**: Keep the CLI execution, HTTP routing, and file-watching logic cleanly separated to maintain readability.
+- **Context Segregation**: Do not inject ephemeral task instructions into this file. Use an `ACTIVE_TASK.md` file to isolate current objectives to maintain a focused context window.
+- **Strict Pre-Flight Output**: Before finalizing any code modification, utilize native Node.js tooling (`node --check <file>`, `node --test`, or `node --watch`) via the bash tool. You must explicitly output the terminal execution trace into the chat to prove verification.
 - **Version Control Constraints**: The agent is strictly forbidden from executing `git add`, `git commit`, or any other version control state-saving mechanisms. The agent may execute `git status` or `git diff` to inspect the working tree, but the human operator will handle all final commits manually.
