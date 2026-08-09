@@ -285,12 +285,36 @@ details {
     border-radius: 4px;
 }
 
+/* Copy Button for Raw Telemetry */
+.copy-btn {
+    position: absolute;
+    right: 0.5rem;
+    top: 0.25rem;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0.2rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.copy-btn:hover {
+    background-color: var(--bg-hover);
+    color: var(--text-main);
+}
+
+/* Ensure the summary container can hold the absolute button */
 summary {
     padding: 0.4rem;
     cursor: pointer;
     font-size: 0.8rem;
     color: var(--text-muted);
     user-select: none;
+    position: relative;
 }
 
 summary:hover {

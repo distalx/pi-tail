@@ -17,6 +17,15 @@ const ICON_MOON = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16
 const ICON_PAUSE = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z"/></svg>`;
 const ICON_PLAY = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M11.596 8.697l-6.363 5.692c-.54.592-.54.126-.54-.126V4.308c0-.654.54-.654.54-.126L11.596 8.697z"/></svg>`;
 
+const ICON_COPY = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-copy" viewBox="0 0 16 16">
+  <path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/>
+</svg>`;
+const ICON_CHECK = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-clipboard-check" viewBox="0 0 16 16">
+  <path fill-rule="evenodd" d="M10.854 7.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 9.793l2.646-2.647a.5.5 0 0 1 .708 0"/>
+  <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1z"/>
+  <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0z"/>
+</svg>`;
+
 let is_paused = false;
 let event_queue = [];
 let active_event_source = null;
@@ -321,6 +330,27 @@ function create_event_block(data) {
     const raw_details = document.createElement("details");
     const raw_summary = document.createElement("summary");
     raw_summary.textContent = "▶ Raw Telemetry";
+
+    // Copy Button Integration
+    const copy_btn = document.createElement("button");
+    copy_btn.className = "copy-btn";
+    copy_btn.setAttribute("aria-label", "Copy JSON");
+    copy_btn.innerHTML = ICON_COPY;
+
+    copy_btn.onclick = (e) => {
+        e.stopPropagation(); // Prevent toggling the details element
+        navigator.clipboard
+            .writeText(JSON.stringify(data.data || {}, null, 2))
+            .then(() => {
+                copy_btn.innerHTML = ICON_CHECK;
+                setTimeout(() => {
+                    copy_btn.innerHTML = ICON_COPY;
+                }, 2000);
+            })
+            .catch((err) => console.error("Copy failed:", err));
+    };
+
+    raw_summary.appendChild(copy_btn);
     raw_details.appendChild(raw_summary);
 
     raw_details.appendChild(render_data(data.data || {}));
