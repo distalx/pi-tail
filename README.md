@@ -15,23 +15,13 @@
 
 ---
 
-## Installation
 
-You can install `pi-tail` globally using npm to use it as a command-line tool across any project workspace:
+## Installation & Usage
 
-```bash
-npm install -g pi-tail
-
-```
-
----
-
-## Usage
-
-Navigate to any project directory where `pi-logger` has initialized telemetry logs (`.pi/logs/`), and run:
+You don't even need to install `pi-tail` globally! Navigate to any project directory where `pi-logger` has initialized telemetry logs (`.pi/logs/`), and run it directly using `npx`:
 
 ```bash
-pi-tail
+npx pi-tail
 
 ```
 
@@ -47,9 +37,17 @@ This will spin up a local server and output a clickable link in your terminal:
 If port `3000` is currently in use, pass the `--port` (or `-p`) flag to specify a different port:
 
 ```bash
-pi-tail --port 4000
+npx pi-tail --port 4000
 # or
-pi-tail -p 8080
+npx pi-tail -p 8080
+
+```
+
+*(Optional)* If you prefer to install it globally for offline or frequent usage:
+
+```bash
+npm install -g pi-tail
+pi-tail
 
 ```
 
