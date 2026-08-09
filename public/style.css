@@ -320,3 +320,18 @@ summary:hover {
 .animate-in {
     animation: slide_in 0.2s ease-out forwards;
 }
+
+#log-filter {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+#log-filter:focus {
+    border-color: var(--accent-color);
+}
