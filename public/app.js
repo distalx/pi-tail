@@ -6,61 +6,30 @@ const current_log_title = document.getElementById("current-log-title");
 let active_event_source = null;
 
 /**
- * Determines if a key should be rendered inside a collapsible <details> element.
- */
-function is_large_payload(key) {
-    const large_keys = [
-        "rendered_system_prompt",
-        "user_prompt",
-        "tool_output",
-        "context",
-    ];
-    return large_keys.includes(key);
-}
-
-/**
- * Recursively renders JSON data into DOM elements.
+ * Recursively renders JSON data into DOM elements as a unified tree structure.
  */
 function render_data(data) {
     const container = document.createElement("div");
     container.className = "event-content";
 
     for (const [key, value] of Object.entries(data)) {
-        if (is_large_payload(key)) {
+        if (typeof value === "object" && value !== null) {
+            // Condition A: Objects/Arrays - Create a collapsible tree node
             const details = document.createElement("details");
             const summary = document.createElement("summary");
-            summary.textContent = `${key} (${typeof value === "object" ? "Object" : typeof value})`;
+            summary.textContent = key;
 
             const body = document.createElement("div");
             body.className = "details-body";
-            body.textContent =
-                typeof value === "object"
-                    ? JSON.stringify(value, null, 2)
-                    : value;
 
-            details.appendChild(summary);
-            details.appendChild(body);
-            container.appendChild(details);
-        } else if (typeof value === "object" && value !== null) {
-            const details = document.createElement("details");
-            const summary = document.createElement("summary");
-
-            // Summary Extraction: Add identifiers to the summary text
-            let summary_text = key;
-            if (value.tool_name) summary_text += ` (tool: ${value.tool_name})`;
-            else if (value.status) summary_text += ` (status: ${value.status})`;
-            else if (value.name) summary_text += ` (name: ${value.name})`;
-
-            summary.textContent = summary_text;
-
-            const body = document.createElement("div");
-            body.className = "details-body";
-            body.textContent = JSON.stringify(value, null, 2);
+            // Recursively render the nested value and append it to the details body
+            body.appendChild(render_data(value));
 
             details.appendChild(summary);
             details.appendChild(body);
             container.appendChild(details);
         } else {
+            // Condition B: Primitives - Create a standard key-value row
             const row = document.createElement("div");
             row.style.marginBottom = "0.3rem";
             row.innerHTML = `<span style="color: #8b949e; font-weight: bold;">${key}:</span> ${value}`;
