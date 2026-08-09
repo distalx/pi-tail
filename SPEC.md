@@ -13,7 +13,7 @@ Create a global terminal utility (`pi-tail`) that watches JSON Lines (`.log`) fi
 ### 1. The CLI & Backend Server (Node.js)
 
 - **CLI Entrypoint (`bin/pi-tail.js`)**: Act as the global binary execution file. Parse command-line arguments (like `--port`) using Node's native `node:util` `parseArgs`, and instantiate the web server.
-- **Data Source**: Dynamically resolve the target `.pi/logs/` directory based on the execution context (`process.cwd()`) to identify available `simple_log_<uuid>.log` files.
+- **Data Source**: Dynamically resolve the target `.pi/logs/` directory based on the execution context (`process.cwd()`) to identify available `pi_log_<uuid>.log` files.
 - **Log Discovery API**: Expose an HTTP `GET` route at `/api/logs` that reads the target logs directory and returns a JSON array of all available `.log` files, sorted descending by modification timestamp (`mtimeMs`).
 - **Client-Directed Streaming**: The server must support historical state loading. The `/stream` endpoint must accept a `?file=` query parameter. Upon connection, execute an initial read of the entire file from byte zero to capture the historical state, then seamlessly transition into a dedicated `fs.watch` process for that specific client connection to stream new byte deltas.
 - **File Watching Mechanism**: Utilize native Node.js modules (`node:fs` and `node:path`) to watch the targeted file for changes.

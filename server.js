@@ -73,7 +73,7 @@ export function start_server(options = {}) {
                     .readdirSync(logs_dir)
                     .filter(
                         (f) =>
-                            f.startsWith("simple_log_") && f.endsWith(".log"),
+                            f.startsWith("pi_log_") && f.endsWith(".log"),
                     )
                     .map((f) => {
                         const stats = fs.statSync(path.join(logs_dir, f));
