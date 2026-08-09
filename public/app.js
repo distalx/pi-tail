@@ -6,8 +6,39 @@ const current_log_title = document.getElementById("current-log-title");
 let active_event_source = null;
 
 /**
- * Recursively renders JSON data into DOM elements as a unified tree structure.
+ * Escapes HTML characters to prevent XSS and malformed DOM layout.
  */
+function escape_html(text) {
+    const map = {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;",
+    };
+    return text.replace(/[&<>"']/g, (m) => map[m]);
+}
+
+/**
+ * Lightweight Markdown parser for Layer 1 display.
+ */
+function parse_markdown(raw_text) {
+    let html = escape_html(raw_text);
+
+    // Code Blocks: ```language\ncode\n``` -> <pre><code class="language-lang">code</code></pre>
+    html = html.replace(/```(\w*)\n([\s\S]*?)\n```/g, (match, lang, code) => {
+        return `<pre><code class="language-${lang}">${code}</code></pre>`;
+    });
+
+    // Inline Code: `code` -> <code>code</code>
+    html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
+
+    // Bold: **text** -> <strong>text</strong>
+    html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+
+    // Line breaks are natively handled by 'white-space: pre-wrap' in CSS.
+    return html;
+}
 function render_data(data) {
     const container = document.createElement("div");
     container.className = "event-content";
@@ -215,7 +246,7 @@ function create_event_block(data) {
     // Layer 1: Human-Readable Full Text
     const full_text_el = document.createElement("div");
     full_text_el.className = "event-full-text";
-    full_text_el.textContent = parsed.full_text;
+    full_text_el.innerHTML = parse_markdown(parsed.full_text);
     details_container.appendChild(full_text_el);
 
     // Layer 2: Raw Telemetry (Collapsible)
