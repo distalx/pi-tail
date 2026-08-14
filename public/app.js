@@ -120,6 +120,13 @@ function render_data(data) {
     const container = document.createElement("div");
     container.className = "event-content";
 
+    if (data === null || typeof data !== "object") {
+        const row = document.createElement("div");
+        row.textContent = String(data);
+        container.appendChild(row);
+        return container;
+    }
+
     for (const [key, value] of Object.entries(data)) {
         if (typeof value === "object" && value !== null) {
             // Condition A: Objects/Arrays - Create a collapsible tree node
@@ -140,7 +147,7 @@ function render_data(data) {
             // Condition B: Primitives - Create a standard key-value row
             const row = document.createElement("div");
             row.style.marginBottom = "0.3rem";
-            row.innerHTML = `<span style="color: #8b949e; font-weight: bold;">${key}:</span> ${value}`;
+            row.innerHTML = `<span style="color: #8b949e; font-weight: bold;">${key}:</span> ${escape_html(String(value))}`;
             container.appendChild(row);
         }
     }
@@ -149,136 +156,251 @@ function render_data(data) {
 }
 
 /**
- * Extracts key information from a log entry for high-level scannability.
+ * Extracts key information from a log entry conforming to the new pi-logger JSONL schema.
  */
 function parse_log_entry(data) {
-    const event = data.event;
-    const payload = data.data || {};
+    const event = data.event_type;
+    const payload = data.payload || {};
+    const model = data.model;
+    const cwd = data.cwd;
+
     let col2 = "unknown";
     let col3 = "";
     let full_text = "";
 
     switch (event) {
+        // Session Events
         case "session_start":
             col2 = "session";
-            col3 = `Reason: ${payload.reason || "unknown"}`;
-
+            col3 = `Reason: ${payload.reason || "new"}`;
             if (payload.previous_session_file) {
                 col3 += ` [from: ${payload.previous_session_file}]`;
             }
-
-            full_text = `Execution started in: ${payload.cwd}\nModel: ${payload.model}`;
+            full_text = `Session started.\nReason: ${payload.reason || "new"}\nWorking Directory: ${cwd || "N/A"}\nModel: ${model || "N/A"}`;
             break;
-        case "session_compact":
-            col2 = "system";
-            col3 = `Context compacted [reason: ${payload.reason}]`;
-            if (payload.will_retry) col3 += " (Retrying turn)";
 
-            full_text = `Compaction executed.\nReason: ${payload.reason}\nTriggered by extension: ${payload.from_extension}`;
+        case "session_shutdown":
+            col2 = "session";
+            col3 = `Shutdown: ${payload.reason || "normal"}`;
+            full_text = `Session shutdown.\nReason: ${payload.reason || "normal"}${payload.target_session_file ? `\nTarget Session File: ${payload.target_session_file}` : ""}`;
             break;
-        case "session_tree":
-            col2 = "system";
-            col3 = `Tree navigation [Leaf: ${payload.old_leaf || "none"} -> ${payload.new_leaf}]`;
 
-            full_text = `Branch navigated.\nNew Leaf ID: ${payload.new_leaf}`;
+        // Agent Runs
+        case "agent_start":
+            col2 = "agent";
+            col3 = "Agent run started";
+            full_text = "Agent run started.";
             break;
-        case "model_select":
-            col2 = "system";
-            col3 = `Model changed to: ${payload.model}`;
 
-            full_text = `Execution engine switched to ${payload.model}.`;
+        case "agent_end":
+            col2 = "agent";
+            col3 = `Agent run ended [Turns: ${payload.turn_count ?? 0}, Messages: ${payload.message_count ?? 0}]`;
+            full_text = `Agent run ended.\nTotal turns: ${payload.turn_count ?? 0}\nTotal messages: ${payload.message_count ?? 0}`;
             break;
-        case "thinking_level_select":
-            col2 = "system";
-            col3 = `Thinking level set to: ${payload.level}`;
 
-            full_text = `LLM reasoning parameter updated to ${payload.level}.`;
+        case "agent_settled":
+            col2 = "agent";
+            col3 = "Agent settled";
+            full_text =
+                "Agent settled (all pending background and turn work completed).";
             break;
+
+        // Prompt & Inputs
         case "before_agent_start":
             col2 = "user";
-            const prompt_text = payload.user_prompt || "";
+            const prompt_text = payload.prompt || "";
             col3 =
                 prompt_text.substring(0, 80) +
                 (prompt_text.length > 80 ? "..." : "");
-
             full_text = prompt_text;
+            if (payload.rendered_system_prompt) {
+                full_text += `\n\n---\n**Rendered System Prompt:**\n${payload.rendered_system_prompt}`;
+            }
             break;
-        case "turn_start":
-            col2 = "turn";
-            const turn_idx = payload.turn_index ?? "N/A";
-            col3 = `Index: ${turn_idx}`;
 
-            full_text = `Turn Index: ${turn_idx}`;
-            break;
         case "input":
             col2 = "input";
-            const raw_input = payload.raw_text || "";
+            const input_text = payload.text || "";
             col3 =
-                raw_input.substring(0, 80) +
-                (raw_input.length > 80 ? "..." : "");
-
+                input_text.substring(0, 80) +
+                (input_text.length > 80 ? "..." : "");
             if (payload.source) {
                 col3 += ` [source: ${payload.source}]`;
             }
-
-            full_text = raw_input;
+            full_text = input_text;
             break;
-        case "tool_execution_start":
-            col2 = payload.tool_name || "tool";
-            const args = payload.args || {};
-            const cmd = args.command || args.path || "no-args";
-            col3 = cmd.substring(0, 80) + (cmd.length > 80 ? "..." : "");
 
-            full_text = cmd;
-            break;
-        case "tool_execution_end":
-            col2 = "out";
-            const result = payload.result || {};
-            const content =
-                result.content && result.content[0]
-                    ? result.content[0].text
-                    : "";
+        case "user_bash":
+            col2 = "bash";
+            const bash_cmd = payload.command || "";
             col3 =
-                content.substring(0, 80) + (content.length > 80 ? "..." : "");
-
-            full_text = content;
+                bash_cmd.substring(0, 80) + (bash_cmd.length > 80 ? "..." : "");
+            full_text = `User Bash Execution:\n${bash_cmd}`;
             break;
-        case "assistant_message":
-            const msg_content = payload.content || [];
 
-            const text_block = msg_content.find((m) => m.type === "text");
-            const think_block = msg_content.find((m) => m.type === "thinking");
-            const tool_block = msg_content.find((m) => m.type === "toolCall");
+        // Turns
+        case "turn_start":
+            col2 = "turn";
+            const turn_start_idx = payload.turn_index ?? "N/A";
+            col3 = `Turn Start [Index: ${turn_start_idx}]`;
+            full_text = `Turn ${turn_start_idx} started at timestamp ${payload.timestamp || "N/A"}.`;
+            break;
 
-            if (text_block) {
-                col2 = "message";
-                const text = text_block.text || "";
+        case "turn_end":
+            col2 = "turn";
+            const turn_end_idx = payload.turn_index ?? "N/A";
+            const tool_results = payload.tool_result_count ?? 0;
+            col3 = `Turn End [Index: ${turn_end_idx}, Tool Results: ${tool_results}]`;
+            full_text = `Turn ${turn_end_idx} ended.\nTool results produced in turn: ${tool_results}`;
+            break;
+
+        // Messages
+        case "message_start": {
+            const role = payload.role || "assistant";
+            col2 =
+                role === "assistant"
+                    ? "message"
+                    : role === "user"
+                      ? "user"
+                      : "out";
+            const summary = payload.content_summary || {};
+            const preview =
+                summary.text || summary.thinking || "(streaming started)";
+            col3 =
+                preview.substring(0, 80) + (preview.length > 80 ? "..." : "");
+            full_text = preview;
+            break;
+        }
+
+        case "message_end": {
+            const role = payload.role || "assistant";
+            const content = payload.content || {};
+
+            if (content.thinking && !content.text) {
+                col2 = "think";
+                col3 =
+                    content.thinking.substring(0, 80) +
+                    (content.thinking.length > 80 ? "..." : "");
+                full_text = content.thinking;
+            } else {
+                col2 =
+                    role === "assistant"
+                        ? "message"
+                        : role === "user"
+                          ? "user"
+                          : "out";
+                const text = content.text || content.thinking || "No content";
                 col3 = text.substring(0, 80) + (text.length > 80 ? "..." : "");
                 full_text = text;
-            } else if (think_block) {
-                col2 = "think";
-                const thinking = think_block.thinking || "";
-                col3 =
-                    thinking.substring(0, 80) +
-                    (thinking.length > 80 ? "..." : "");
-                full_text = thinking;
-            } else if (tool_block) {
-                col2 = tool_block.name || "toolCall";
-                const targs = tool_block.arguments || {};
-                const tcmd = targs.path || targs.command || "no-args";
-                col3 = tcmd.substring(0, 80) + (tcmd.length > 80 ? "..." : "");
-                full_text = tcmd;
-            } else {
-                col2 = "assistant";
-                col3 = "empty";
-                full_text = "No content available";
+            }
+
+            if (payload.performance) {
+                full_text += `\n\n---\n*Prefill:* ${payload.performance.prefill_ms}ms | *Gen:* ${payload.performance.generation_ms}ms | *TPS:* ${payload.performance.output_tps ?? "N/A"}`;
             }
             break;
+        }
+
+        // Tools
+        case "tool_execution_start": {
+            col2 = payload.tool_name || "tool";
+            const args = payload.args || {};
+            const arg_str =
+                typeof args === "string"
+                    ? args
+                    : args.command || args.path || JSON.stringify(args);
+            col3 =
+                arg_str.substring(0, 80) + (arg_str.length > 80 ? "..." : "");
+            full_text = `Tool Call: ${payload.tool_name} (ID: ${payload.tool_call_id})\nArgs:\n${JSON.stringify(args, null, 2)}`;
+            break;
+        }
+
+        case "tool_execution_end": {
+            col2 = payload.is_error ? "error" : "out";
+            const result_text =
+                payload.result_raw ||
+                payload.result_summary ||
+                (payload.is_error ? "Tool failed" : "Success");
+            col3 =
+                (payload.is_error ? "[Error] " : "") +
+                (result_text.substring(0, 70) +
+                    (result_text.length > 70 ? "..." : ""));
+            full_text = result_text;
+            break;
+        }
+
+        case "tool_call":
+            col2 = "toolCall";
+            const call_input = payload.input
+                ? JSON.stringify(payload.input)
+                : "{}";
+            col3 = `${payload.tool_name}: ${call_input}`.substring(0, 80);
+            full_text = `LLM Tool Call: ${payload.tool_name}\nInput:\n${JSON.stringify(payload.input, null, 2)}`;
+            break;
+
+        case "tool_result":
+            col2 = payload.is_error ? "error" : "out";
+            col3 = `Result: ${payload.tool_name} [${payload.content_length ?? 0} chars]`;
+            full_text = `Tool Result returned to LLM for ${payload.tool_name}.\nContent length: ${payload.content_length} characters\nError: ${payload.is_error}`;
+            break;
+
+        // Provider & Network
+        case "after_provider_response":
+            col2 = payload.status >= 400 ? "error" : "provider";
+            col3 = `HTTP ${payload.status}`;
+            full_text = `Provider HTTP Response: ${payload.status}\nHeaders:\n${JSON.stringify(payload.headers, null, 2)}`;
+            break;
+
+        // Configuration Changes
+        case "model_select":
+            col2 = "system";
+            col3 = `Model: ${payload.previous_model || "none"} -> ${payload.model}`;
+            full_text = `Model changed to: ${payload.model}\nPrevious Model: ${payload.previous_model}\nSource: ${payload.source}`;
+            break;
+
+        case "thinking_level_select":
+            col2 = "system";
+            col3 = `Thinking level: ${payload.previous_level || "none"} -> ${payload.level}`;
+            full_text = `Thinking level switched to ${payload.level} (was ${payload.previous_level}).`;
+            break;
+
+        // Session Compaction & Branching
+        case "session_before_compact":
+            col2 = "system";
+            col3 = `Compacting context [reason: ${payload.reason}, tokens: ${payload.tokens_before ?? "N/A"}]`;
+            full_text = `Compaction started.\nReason: ${payload.reason}\nTokens before: ${payload.tokens_before}\nBranch entries: ${payload.branch_entry_count}`;
+            break;
+
+        case "session_compact":
+            col2 = "system";
+            col3 = `Context compacted [reason: ${payload.reason}, tokens: ${payload.tokens_before ?? "N/A"} -> ${payload.tokens_after ?? "N/A"}]`;
+            full_text = `Compaction completed.\nReason: ${payload.reason}\nTokens before: ${payload.tokens_before}\nTokens after: ${payload.tokens_after}\nRetrying turn: ${payload.will_retry}`;
+            break;
+
+        case "session_tree":
+            col2 = "system";
+            col3 = `Tree navigation [Leaf: ${payload.old_leaf_id || "none"} -> ${payload.new_leaf_id}]`;
+            full_text = `Branch navigated.\nOld Leaf: ${payload.old_leaf_id}\nNew Leaf: ${payload.new_leaf_id}`;
+            break;
+
+        // Metrics
+        case "metrics_snapshot":
+            col2 = "metrics";
+            const cost_str =
+                payload.cost?.total !== undefined
+                    ? `$${payload.cost.total.toFixed(4)}`
+                    : "$0";
+            const total_tokens = payload.tokens?.total ?? 0;
+            col3 = `Snapshot [Tokens: ${total_tokens}, Cost: ${cost_str}, Turns: ${payload.turn_count ?? 0}]`;
+            full_text = `Metrics Snapshot:\nTokens: ${JSON.stringify(payload.tokens, null, 2)}\nCost: ${JSON.stringify(payload.cost, null, 2)}\nTool Error Rate: ${payload.tool_error_rate}\nAvg TPS: ${payload.avg_output_tps}`;
+            break;
+
         default:
-            col2 = event;
-            const raw = JSON.stringify(payload);
-            col3 = raw.substring(0, 80) + (raw.length > 80 ? "..." : "");
-            full_text = raw;
+            col2 = event || "unknown";
+            const raw_str = JSON.stringify(payload);
+            col3 =
+                raw_str.substring(0, 80) + (raw_str.length > 80 ? "..." : "");
+            full_text = raw_str;
+            break;
     }
 
     return {
@@ -340,7 +462,7 @@ function create_event_block(data) {
     copy_btn.onclick = (e) => {
         e.stopPropagation(); // Prevent toggling the details element
         navigator.clipboard
-            .writeText(JSON.stringify(data.data || {}, null, 2))
+            .writeText(JSON.stringify(data.payload || {}, null, 2))
             .then(() => {
                 copy_btn.innerHTML = ICON_CHECK;
                 setTimeout(() => {
@@ -353,7 +475,7 @@ function create_event_block(data) {
     raw_summary.appendChild(copy_btn);
     raw_details.appendChild(raw_summary);
 
-    raw_details.appendChild(render_data(data.data || {}));
+    raw_details.appendChild(render_data(data.payload || {}));
     details_container.appendChild(raw_details);
 
     block.appendChild(details_container);
