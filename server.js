@@ -72,8 +72,7 @@ export function start_server(options = {}) {
                 const files = fs
                     .readdirSync(logs_dir)
                     .filter(
-                        (f) =>
-                            f.startsWith("pi_log_") && f.endsWith(".log"),
+                        (f) => f.startsWith("session-") && f.endsWith(".jsonl"),
                     )
                     .map((f) => {
                         const stats = fs.statSync(path.join(logs_dir, f));
