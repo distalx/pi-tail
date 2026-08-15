@@ -19,12 +19,16 @@ let current_view = "feed";
 const hud_tokens_in = document.getElementById("hud-tokens-in");
 const hud_tokens_out = document.getElementById("hud-tokens-out");
 const hud_tokens_reasoning = document.getElementById("hud-tokens-reasoning");
+const hud_tps = document.getElementById("hud-tps");
+const hud_cost = document.getElementById("hud-cost");
 const hud_errors = document.getElementById("hud-errors");
 
 function reset_metrics_hud() {
     hud_tokens_in.textContent = "-";
     hud_tokens_out.textContent = "-";
     hud_tokens_reasoning.textContent = "-";
+    hud_tps.textContent = "-";
+    hud_cost.textContent = "-";
     hud_errors.textContent = "-";
     hud_errors.style.color = "inherit";
 }
@@ -36,6 +40,16 @@ function update_metrics_hud(payload) {
     const tokens_in = payload.tokens?.input ?? 0;
     const tokens_out = payload.tokens?.output ?? 0;
     const tokens_reasoning = payload.tokens?.reasoning ?? 0;
+
+    // Extract repaired metrics
+    const tps =
+        payload.avg_output_tps !== null && payload.avg_output_tps !== undefined
+            ? payload.avg_output_tps
+            : "-";
+    const cost =
+        payload.cost?.total !== undefined
+            ? `$${payload.cost.total.toFixed(4)}`
+            : "$0.0000";
 
     // Format error rate as a percentage
     let error_rate = "-";
@@ -50,6 +64,8 @@ function update_metrics_hud(payload) {
     hud_tokens_in.textContent = tokens_in.toLocaleString();
     hud_tokens_out.textContent = tokens_out.toLocaleString();
     hud_tokens_reasoning.textContent = tokens_reasoning.toLocaleString();
+    hud_tps.textContent = tps;
+    hud_cost.textContent = cost;
     hud_errors.textContent = error_rate;
 
     // Visually flag high error rates
