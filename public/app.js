@@ -16,6 +16,50 @@ let event_queue = [];
 let active_event_source = null;
 let current_view = "feed";
 
+const hud_tokens_in = document.getElementById("hud-tokens-in");
+const hud_tokens_out = document.getElementById("hud-tokens-out");
+const hud_tokens_reasoning = document.getElementById("hud-tokens-reasoning");
+const hud_errors = document.getElementById("hud-errors");
+
+function reset_metrics_hud() {
+    hud_tokens_in.textContent = "-";
+    hud_tokens_out.textContent = "-";
+    hud_tokens_reasoning.textContent = "-";
+    hud_errors.textContent = "-";
+    hud_errors.style.color = "inherit";
+}
+
+function update_metrics_hud(payload) {
+    if (!payload) return;
+
+    // Extract token breakdown
+    const tokens_in = payload.tokens?.input ?? 0;
+    const tokens_out = payload.tokens?.output ?? 0;
+    const tokens_reasoning = payload.tokens?.reasoning ?? 0;
+
+    // Format error rate as a percentage
+    let error_rate = "-";
+    if (
+        payload.tool_error_rate !== undefined &&
+        payload.tool_error_rate !== null
+    ) {
+        error_rate = `${(payload.tool_error_rate * 100).toFixed(1)}%`;
+    }
+
+    // Apply to DOM
+    hud_tokens_in.textContent = tokens_in.toLocaleString();
+    hud_tokens_out.textContent = tokens_out.toLocaleString();
+    hud_tokens_reasoning.textContent = tokens_reasoning.toLocaleString();
+    hud_errors.textContent = error_rate;
+
+    // Visually flag high error rates
+    if (payload.tool_error_rate > 0) {
+        hud_errors.style.color = "var(--status-disconnected)";
+    } else {
+        hud_errors.style.color = "inherit";
+    }
+}
+
 // Initialize the Trace Manager
 const trace_manager = new TraceManager();
 
@@ -118,10 +162,11 @@ const debounced_render_traces = debounce(render_traces, 100);
 function connect_to_log(filename) {
     if (active_event_source) active_event_source.close();
 
-    // 1. Instantly clear both views and the in-memory tree
+    // 1. Instantly clear views, traces, and HUD
     timeline.innerHTML = "";
     traces_view.innerHTML = "";
     trace_manager.clear();
+    reset_metrics_hud();
 
     current_log_title.textContent = filename;
 
@@ -149,10 +194,15 @@ function connect_to_log(filename) {
                 return;
             }
 
+            // Update the HUD seamlessly if a snapshot arrives
+            if (data.event_type === "metrics_snapshot") {
+                update_metrics_hud(data.payload);
+            }
+
             // Process data for the Trace tree
             trace_manager.process_event(data);
 
-            // 2. Trigger a debounced re-render ONLY if the traces view is currently active
+            // Trigger a debounced re-render ONLY if the traces view is currently active
             if (current_view === "traces") {
                 debounced_render_traces();
             }

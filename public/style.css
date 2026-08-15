@@ -370,3 +370,17 @@ summary:hover {
     flex: 1;
     display: none; /* Hidden by default */
 }
+
+#metrics-hud {
+    display: flex;
+    gap: 2rem;
+    padding: 0.5rem 2rem;
+    background-color: var(--bg-primary);
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+
+#metrics-hud span {
+    color: var(--text-muted);
+}
