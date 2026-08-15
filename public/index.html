@@ -26,6 +26,13 @@
                         placeholder="Filter logs..."
                     />
                     <button
+                        id="view-toggle"
+                        class="theme-toggle"
+                        aria-label="Toggle View"
+                    >
+                        Traces View
+                    </button>
+                    <button
                         id="theme-toggle"
                         class="theme-toggle"
                         aria-label="Toggle Theme"
@@ -40,7 +47,10 @@
                     </div>
                 </div>
             </header>
+
+            <!-- Dual Views -->
             <div id="timeline"></div>
+            <div id="traces-view"></div>
         </main>
         <script type="module" src="./app.js"></script>
     </body>

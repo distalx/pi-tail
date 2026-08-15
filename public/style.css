@@ -261,6 +261,10 @@ body {
     color: var(--color-coral) !important;
 }
 
+.type-metrics {
+    color: var(--color-coral) !important;
+}
+
 /* Tool Execution Colors */
 .type-bash {
     color: var(--color-orange) !important;
@@ -358,4 +362,11 @@ summary:hover {
 
 #log-filter:focus {
     border-color: var(--accent-color);
+}
+
+#traces-view {
+    padding: 1rem 2rem;
+    overflow-y: auto;
+    flex: 1;
+    display: none; /* Hidden by default */
 }
