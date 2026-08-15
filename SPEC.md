@@ -6,54 +6,32 @@ Build a lightweight, zero-dependency Node.js CLI tool and background web server 
 
 ## Objective
 
-Create a global terminal utility (`pi-tail`) that watches JSON Lines (`.log`) files located in the user's active workspace (`.pi/logs/`) and broadcasts appended lines to a browser interface using Server-Sent Events (SSE). The system must run independently of the `pi` agent so that logs remain accessible even if the agent process terminates, and it must support historical log viewing and file switching.
+Create a global terminal utility (`pi-tail`) that watches JSON Lines (`.jsonl`) files located in the user's active workspace (`.pi/logs/`) and broadcasts appended lines to a browser interface using Server-Sent Events (SSE). The system must run independently of the `pi` agent so that logs remain accessible even if the agent process terminates, and it must support historical log viewing, file switching, chronological feeds, and hierarchical trace visualization.
 
 ## Architecture
 
 ### 1. The CLI & Backend Server (Node.js)
 
 - **CLI Entrypoint (`bin/pi-tail.js`)**: Act as the global binary execution file. Parse command-line arguments (like `--port`) using Node's native `node:util` `parseArgs`, and instantiate the web server.
-- **Data Source**: Dynamically resolve the target `.pi/logs/` directory based on the execution context (`process.cwd()`) to identify available `pi_log_<uuid>.log` files.
-- **Log Discovery API**: Expose an HTTP `GET` route at `/api/logs` that reads the target logs directory and returns a JSON array of all available `.log` files, sorted descending by modification timestamp (`mtimeMs`).
+- **Data Source**: Dynamically resolve the target `.pi/logs/` directory based on the execution context (`process.cwd()`) to identify available `session-*.jsonl` files.
+- **Log Discovery API**: Expose an HTTP `GET` route at `/api/logs` that reads the target logs directory and returns a JSON array of all available `.jsonl` files, sorted descending by modification timestamp (`mtimeMs`).
 - **Client-Directed Streaming**: The server must support historical state loading. The `/stream` endpoint must accept a `?file=` query parameter. Upon connection, execute an initial read of the entire file from byte zero to capture the historical state, then seamlessly transition into a dedicated `fs.watch` process for that specific client connection to stream new byte deltas.
 - **File Watching Mechanism**: Utilize native Node.js modules (`node:fs` and `node:path`) to watch the targeted file for changes.
 - **Delta Streaming**: When an OS interrupt fires indicating the file size has increased, read only the newly appended bytes (using `fs.createReadStream` with explicit `start` and `end` positions).
 - **SSE Broadcast**: Expose an HTTP endpoint using the `text/event-stream` content type to push the new JSON lines directly to connected clients.
-- **Static File Serving**: Serve the frontend assets (`index.html`, `app.js`, `style.css`) from the `public/` directory via standard HTTP `GET` requests, safely resolved via `import.meta.url`.
+- **Static File Serving**: Serve the frontend assets (`index.html`, `app.js`, `style.css`, etc.) from the `public/` directory via standard HTTP `GET` requests, safely resolved via `import.meta.url`.
 
 ### 2. The Frontend Client (Vanilla JS / HTML / CSS)
 
 - **Zero Dependencies**: Do not use Webpack, React, or any build tools. Standard HTML, CSS, and JS only.
 - **Sidebar Navigation**: Implement a left sidebar that executes a `fetch()` to `/api/logs` on load and renders a clickable list of available log files.
-- **State Reset**: Clicking a file in the sidebar must manually terminate the existing `EventSource` connection using `.close()`, clear all child nodes from the main timeline container to prevent data merging, and initiate a new `EventSource` connection targeted at the newly selected file.
-- **DOM Construction**: Parse incoming JSON objects and dynamically generate UI elements using native DOM manipulation (`document.createElement`) to represent the timeline. Prepend new nodes so the newest data appears at the top.
-- **Payload Management**: Utilize native HTML `<details>` and `<summary>` tags to collapse large data objects (like `rendered_system_prompt`), keeping the timeline scannable. Extract top-level keys to display in the `<summary>` string to reduce required clicks.
-- **Node Culling**: Implement a mechanism to remove the oldest child nodes if the timeline exceeds 500 elements to prevent DOM bloat and browser memory exhaustion.
-
-## Implementation Phases (Historical & Upcoming)
-
-### Phase 1 - 7: Foundation & UI Layout
-
-- Server initialization, directory scanning, SSE delta streaming, and semantic three-column flexbox layout creation. _(Completed)_
-
-### Phase 8: Layer 2 Data Parsing Refactor (Current)
-
-- Deprecate the rigid `large_keys` array in `render_data`.
-- Refactor Layer 2 to ingest and render the complete `data` object as a unified, configurable JSON tree to ensure consistency across varying event payloads (`before_agent_start`, `tool_execution_start`, etc.).
-
-### Phase 9: Layer 1 Markdown Integration
-
-- Implement a lightweight, zero-dependency markdown parser for the `full_text_el` in Layer 1 to format AI outputs and system prompts cleanly.
-
-### Phase 10: Atom One Theming & Animations
-
-- Extract hardcoded CSS hex values into `:root` and `[data-theme="dark"]` variables.
-- Map the Atom One Light/Dark palette and implement a `localStorage` backed theme toggle.
-- Add CSS `@keyframes` for smooth insertion of new `.event-block` elements.
-
-### Phase 11: Extended Quality of Life Features
-
-- Implement auto-scroll pausing, client-side filtering, and payload copy-to-clipboard functionality.
+- **State Reset**: Clicking a file in the sidebar must manually terminate the existing `EventSource` connection using `.close()`, clear all child nodes from the timeline and trace containers, reset the metrics HUD, and initiate a new `EventSource` connection targeted at the newly selected file.
+- **Dual-View Architecture**: Maintain an internal state variable to toggle the UI between a flat chronological feed and a hierarchical trace visualization. Avoid external URL routing (History API) to prevent 404 errors on hard refreshes.
+- **Metrics HUD**: Render a sticky flexbox ribbon above the main content area that intercepts `metrics_snapshot` events to dynamically display granular token usage (Input, Output, Reasoning) and error rates in real-time.
+- **Trace Visualization & Gantt Charts**: Reconstruct hierarchical execution trees in memory using `trace_id`, `span_id`, and `parent_span_id`. Render these as native HTML `<details>` blocks, calculating and applying CSS `left` and `width` percentages to create inline Gantt charts mapping execution duration. Wrap the rendering logic in a debounce utility to prevent UI thread locking during rapid SSE streams.
+- **Payload Inspection**: Utilize the native HTML5 `<dialog>` element to create on-the-fly popup modals for inspecting raw JSON payloads associated with specific trace spans, avoiding complex z-index management.
+- **DOM Construction (Feed View)**: Parse incoming JSON objects and dynamically generate UI elements using native DOM manipulation (`document.createElement`). Prepend new nodes so the newest data appears at the top. Utilize native HTML `<details>` and `<summary>` tags to collapse large data objects.
+- **Node Culling**: Implement a mechanism to remove the oldest child nodes if the chronological timeline exceeds 500 elements to prevent DOM bloat and browser memory exhaustion.
 
 ## Coding Conventions & DX Guidelines
 
